@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chaotic Ball Animation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #000;
+            color: white;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        #gameCanvas {
+            display: block;
+            background: #000;
+        }
+
+        .hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .question {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .scoreboard {
+            position: absolute;
+            top: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            width: 400px;
+            height: 40px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .score-left, .score-right {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .score-left {
+            background: rgba(0,255,0,0.3);
+            color: #00ff00;
+        }
+
+        .score-right {
+            background: rgba(255,0,0,0.3);
+            color: #ff0000;
+        }
+
+        .timer {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .fps {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        .settings {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.9);
+            padding: 20px;
+            border-radius: 10px;
+            min-width: 300px;
+            pointer-events: auto;
+            z-index: 20;
+            transition: transform 0.3s ease;
+        }
+
+        .settings.hidden {
+            transform: translateX(-100%);
+        }
+
+        .settings h3 {
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .setting-group {
+            margin-bottom: 15px;
+        }
+
+        .setting-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        .setting-group input, .setting-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background: #333;
+            color: white;
+        }
+
+        .setting-group input[type="color"] {
+            width: 50px;
+            height: 30px;
+            padding: 0;
+            border: none;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .toggle-settings {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 30;
+            pointer-events: auto;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .file-input {
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .question {
+                font-size: 1.8rem;
+                top: 20px;
+            }
+            
+            .scoreboard {
+                width: 300px;
+                top: 70px;
+            }
+            
+            .score-left, .score-right {
+                font-size: 1rem;
+            }
+            
+            .timer {
+                font-size: 1.4rem;
+            }
+            
+            .settings {
+                min-width: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    
+    <button class="toggle-settings" onclick="toggleSettings()">⚙️</button>
+    
+    <div class="hud">
+        <div class="question" id="questionText">Are you dumb? (respectfully)</div>
+        <div class="scoreboard">
+            <div class="score-left" id="scoreLeft">
+                <span id="leftLabel">Yes</span>: <span id="leftCounter">0</span>
+            </div>
+            <div class="score-right" id="scoreRight">
+                <span id="rightLabel">No</span>: <span id="rightCounter">0</span>
+            </div>
+        </div>
+        <div class="timer" id="timer">00:00</div>
+        <div class="fps" id="fps">FPS: 60</div>
+    </div>
+
+    <div class="settings" id="settingsPanel">
+        <h3>Settings</h3>
+        
+        <div class="setting-group">
+            <label for="questionInput">Question Text:</label>
+            <input type="text" id="questionInput" value="Are you dumb? (respectfully)">
+        </div>
+        
+        <div class="setting-group">
+            <label for="answer1Label">Answer 1 Label:</label>
+            <input type="text" id="answer1Label" value="Yes">
+            <label for="answer1Color">Answer 1 Color:</label>
+            <input type="color" id="answer1Color" value="#00ff00">
+        </div>
+        
+        <div class="setting-group">
+            <label for="answer2Label">Answer 2 Label:</label>
+            <input type="text" id="answer2Label" value="No">
+            <label for="answer2Color">Answer 2 Color:</label>
+            <input type="color" id="answer2Color" value="#ff0000">
+        </div>
+        
+        <div class="setting-group">
+            <label for="ringCount">Number of Rings:</label>
+            <input type="number" id="ringCount" value="15" min="5" max="50">
+        </div>
+        
+        <div class="setting-group">
+            <label for="gapSize">Ring Gap Size (degrees):</label>
+            <input type="number" id="gapSize" value="8" min="5" max="45">
+        </div>
+        
+        <div class="setting-group">
+            <label for="ballSpeed">Ball Speed:</label>
+            <input type="number" id="ballSpeed" value="3" min="1" max="10" step="0.5">
+        </div>
+        
+        <div class="setting-group">
+            <label for="midiFile">MIDI File:</label>
+            <input type="file" id="midiFile" accept=".mid,.midi" class="file-input">
+        </div>
+        
+        <div class="buttons">
+            <button class="btn btn-primary" onclick="applySettings()">Apply & Restart</button>
+            <button class="btn btn-secondary" onclick="togglePause()">Pause/Resume</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/midi-parser-js@4.0.4/dist/midi-parser.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
